@@ -5,12 +5,17 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { RequestLoggerMiddleware } from './middleware/request-logger.middleware';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 
 // Load environment variables from .env file
 dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Enable cookie parsing
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  app.use(cookieParser());
 
   // Global validation pipe with transform enabled
   app.useGlobalPipes(
@@ -34,6 +39,7 @@ async function bootstrap() {
       .setDescription('The OnlyChat API description')
       .setVersion('1.0')
       .addTag('users')
+      .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);

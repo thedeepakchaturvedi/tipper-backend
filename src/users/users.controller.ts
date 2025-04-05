@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,12 +18,14 @@ import { DashboardResponse } from './dto/dashboard.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { TransactionFilterDto } from './dto/transaction-filter.dto';
 import { DashboardParamsDto } from './dto/dashboard-params.dto';
+import { AuthGuard } from './guards/auth.guard';
 import {
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { SupportedCurrencies } from 'src/users/dto/supported-currencies.dto';
 import { UserResponseDto } from './dto/user-response.dto';
@@ -63,6 +66,8 @@ export class UsersController {
     return this.usersService.validateUser(loginUserDto);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Put(':id')
   @ApiOperation({ summary: 'Update user details' })
   @ApiParam({
@@ -86,6 +91,8 @@ export class UsersController {
     return this.usersService.update(id, updateUserDto);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Post(':id/verify-bank')
   @ApiOperation({ summary: 'Verify user bank details' })
   @ApiParam({
@@ -129,6 +136,8 @@ export class UsersController {
     return this.usersService.createTip(id, createTipDto);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Get()
   @ApiOperation({ summary: 'Get all users with pagination' })
   @ApiQuery({
@@ -156,6 +165,8 @@ export class UsersController {
     return this.usersService.findAll(paginationDto);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Get(':id')
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiParam({
@@ -243,6 +254,8 @@ export class UsersController {
     return this.usersService.getTransactions(id, paginationDto, filterDto);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Get(':id/dashboard')
   @ApiOperation({ summary: 'Get user dashboard with transaction summary' })
   @ApiParam({
