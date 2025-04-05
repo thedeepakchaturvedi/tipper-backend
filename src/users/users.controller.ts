@@ -1,0 +1,284 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  NotFoundException,
+  Put,
+  Query,
+} from '@nestjs/common';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateTipDto } from './dto/create-tip.dto';
+import { DashboardResponse } from './dto/dashboard.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { TransactionFilterDto } from './dto/transaction-filter.dto';
+import { DashboardParamsDto } from './dto/dashboard-params.dto';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { SupportedCurrencies } from 'src/users/dto/supported-currencies.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { TipResponseDto } from './dto/tip-response.dto';
+
+@ApiTags('Users')
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Post('register')
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered',
+    type: UserResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email or tipper_id already exists',
+  })
+  async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    return this.usersService.create(createUserDto);
+  }
+
+  @Post('login')
+  @ApiOperation({ summary: 'Login user' })
+  @ApiResponse({
+    status: 200,
+    description: 'User successfully logged in',
+    type: UserResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid credentials',
+  })
+  async login(@Body() loginUserDto: LoginUserDto): Promise<UserResponseDto> {
+    return this.usersService.validateUser(loginUserDto);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update user details' })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID (tipper_id)',
+    example: 'user123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User details updated successfully',
+    type: UserResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  @Post(':id/verify-bank')
+  @ApiOperation({ summary: 'Verify user bank details' })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID (tipper_id)',
+    example: 'user123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bank details verified successfully',
+    type: UserResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async verifyBank(@Param('id') tipperId: string): Promise<UserResponseDto> {
+    return this.usersService.verifyBankDetails(tipperId);
+  }
+
+  @Post(':id/tip')
+  @ApiOperation({ summary: 'Create a new tip for a user' })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID (tipper_id)',
+    example: 'user123',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Tip created successfully',
+    type: TipResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found or tipping not enabled',
+  })
+  async createTip(
+    @Param('id') id: string,
+    @Body() createTipDto: CreateTipDto,
+  ): Promise<TipResponseDto> {
+    return this.usersService.createTip(id, createTipDto);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all users with pagination' })
+  @ApiQuery({
+    name: 'skip',
+    required: false,
+    description: 'Number of records to skip',
+    type: 'number',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of records to return',
+    type: 'number',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of users retrieved successfully',
+    type: [UserResponseDto],
+  })
+  async findAll(
+    @Query() paginationDto: PaginationDto,
+  ): Promise<UserResponseDto[]> {
+    return this.usersService.findAll(paginationDto);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID (tipper_id)',
+    example: 'user123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User retrieved successfully',
+    type: UserResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async findOne(@Param('id') id: string): Promise<UserResponseDto> {
+    const user = await this.usersService.findOne(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  @Get(':id/transactions')
+  @ApiOperation({ summary: 'Get user transactions with filtering' })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID (tipper_id)',
+    example: 'user123',
+  })
+  @ApiQuery({
+    name: 'skip',
+    required: false,
+    description: 'Number of records to skip',
+    type: 'number',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of records to return',
+    type: 'number',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by transaction status',
+    enum: ['COMPLETED', 'FAILED', 'PENDING'],
+  })
+  @ApiQuery({
+    name: 'currency',
+    required: false,
+    description: 'Filter by currency',
+    enum: Object.values(SupportedCurrencies),
+  })
+  @ApiQuery({
+    name: 'minAmount',
+    required: false,
+    description: 'Minimum transaction amount',
+    type: 'number',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'maxAmount',
+    required: false,
+    description: 'Maximum transaction amount',
+    type: 'number',
+    example: 1000,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of transactions retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found or no transactions available',
+  })
+  async getTransactions(
+    @Param('id') id: string,
+    @Query() paginationDto: PaginationDto,
+    @Query() filterDto: TransactionFilterDto,
+  ) {
+    return this.usersService.getTransactions(id, paginationDto, filterDto);
+  }
+
+  @Get(':id/dashboard')
+  @ApiOperation({ summary: 'Get user dashboard with transaction summary' })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID (tipper_id)',
+    example: 'user123',
+  })
+  @ApiQuery({
+    name: 'baseCurrency',
+    required: false,
+    description: 'Base currency for amount conversion',
+    enum: Object.values(SupportedCurrencies),
+    example: SupportedCurrencies.INR,
+  })
+  @ApiQuery({
+    name: 'recentTransactionsLimit',
+    required: false,
+    description: 'Number of recent transactions to return',
+    type: 'integer',
+    minimum: 1,
+    maximum: 100,
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard data retrieved successfully',
+    type: DashboardResponse,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async getDashboard(
+    @Param('id') tipperId: string,
+    @Query() params: DashboardParamsDto,
+  ): Promise<DashboardResponse> {
+    return this.usersService.getDashboard(tipperId, params);
+  }
+}
