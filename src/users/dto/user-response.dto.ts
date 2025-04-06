@@ -4,6 +4,12 @@ export class UserResponseDto {
   @ApiProperty({ description: 'User ID', example: 'user123' })
   _id: string;
 
+  @ApiProperty({
+    description: 'User UUID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  uuid: string;
+
   @ApiProperty({ description: 'User name', example: 'John Doe' })
   name: string;
 

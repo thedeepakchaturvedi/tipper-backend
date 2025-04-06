@@ -23,6 +23,7 @@ import { DashboardParamsDto } from './dto/dashboard-params.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { TipResponseDto } from './dto/tip-response.dto';
 import { ObjectId } from 'mongodb';
+import { v4 as uuidv4 } from 'uuid';
 
 interface MongoError extends Error {
   code: number;
@@ -93,6 +94,7 @@ export class UsersService {
   private sanitizeUserResponse(user: UserDocument): UserResponseDto {
     return {
       _id: (user._id as Types.ObjectId).toString(),
+      uuid: user.uuid,
       name: user.name,
       email: user.email,
       tipper_id: user.tipper_id,
@@ -120,31 +122,54 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     try {
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+      const uuid = 'oc-' + uuidv4();
       const createdUser = new this.userModel({
-        name: createUserDto.name,
         email: createUserDto.email,
-        tipper_id: createUserDto.tipper_id,
         userHash: hashedPassword,
+        name: '', // Empty name initially
+        isTipperIdSet: false,
+        uuid,
+        tipper_id: uuid,
       });
       const savedUser = await createdUser.save();
       return this.sanitizeUserResponse(savedUser);
     } catch (error) {
       const mongoError = error as MongoError;
       if (mongoError.code === 11000) {
-        // MongoDB duplicate key error code
-        throw new ConflictException('Email or tipper_id already exists');
+        throw new ConflictException('Email already exists');
       }
       throw error;
     }
   }
 
   async update(
-    tipper_id: string,
+    id: string,
     updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    const user = await this.userModel.findOne({ tipper_id });
+    const user = await this.userModel.findOne({
+      $or: [{ uuid: id }, { tipper_id: id }],
+    });
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // Handle tipper_id setting (one-time only)
+    if (updateUserDto.tipper_id) {
+      if (user.isTipperIdSet && user.tipper_id !== updateUserDto.tipper_id) {
+        throw new BadRequestException('tipper_id can only be set once');
+      }
+
+      // Check if tipper_id is already taken by another user
+      const existingUser = await this.userModel.findOne({
+        tipper_id: updateUserDto.tipper_id,
+        _id: { $ne: user._id }, // Exclude current user
+      });
+      if (existingUser) {
+        throw new ConflictException('tipper_id already exists');
+      }
+
+      user.tipper_id = updateUserDto.tipper_id;
+      user.isTipperIdSet = true;
     }
 
     // Update basic user information
@@ -209,8 +234,10 @@ export class UsersService {
     return users.map((user) => this.sanitizeUserResponse(user));
   }
 
-  async findOne(tipper_id: string): Promise<UserResponseDto | null> {
-    const user = await this.userModel.findOne({ tipper_id }).exec();
+  async findOne(id: string): Promise<UserResponseDto | null> {
+    const user = await this.userModel
+      .findOne({ $or: [{ uuid: id }, { tipper_id: id }] })
+      .exec();
     return user ? this.sanitizeUserResponse(user) : null;
   }
 
@@ -348,7 +375,7 @@ export class UsersService {
     }
 
     const transactionCollection = this.connection.db.collection(
-      `transactions_${tipper_id}`,
+      `${tipper_id}.transactions`,
     );
     if (!transactionCollection) {
       throw new BadRequestException('Transaction collection not found');

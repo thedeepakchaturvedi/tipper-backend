@@ -45,7 +45,7 @@ export class UsersController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Email or tipper_id already exists',
+    description: 'Email already exists',
   })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     return this.usersService.create(createUserDto);
@@ -72,8 +72,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user details' })
   @ApiParam({
     name: 'id',
-    description: 'User ID (tipper_id)',
-    example: 'user123',
+    description: 'User UUID or tipper_id',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @ApiResponse({
     status: 200,
@@ -83,6 +83,14 @@ export class UsersController {
   @ApiResponse({
     status: 404,
     description: 'User not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'tipper_id can only be set once',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'tipper_id already exists',
   })
   async update(
     @Param('id') id: string,
@@ -168,11 +176,11 @@ export class UsersController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiOperation({ summary: 'Get user by UUID or tipper_id' })
   @ApiParam({
     name: 'id',
-    description: 'User ID (tipper_id)',
-    example: 'user123',
+    description: 'User UUID or tipper_id',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @ApiResponse({
     status: 200,

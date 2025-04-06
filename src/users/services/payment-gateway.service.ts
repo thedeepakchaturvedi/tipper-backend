@@ -17,7 +17,7 @@ export class PaymentGatewayService {
     return new Promise((resolve) => {
       setTimeout(() => {
         // Simulate 90% success rate
-        const success = Math.random() > 0.9;
+        const success = Math.random() > 0.1;
         if (success) {
           resolve({
             success: true,

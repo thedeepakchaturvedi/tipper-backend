@@ -5,14 +5,20 @@ export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
+  uuid: string;
+
+  @Prop()
   name: string;
 
   @Prop({ required: true, unique: true })
   email: string;
 
-  @Prop({ required: true, unique: true })
-  tipper_id: string;
+  @Prop({ unique: true, sparse: true })
+  tipper_id?: string;
+
+  @Prop({ default: false })
+  isTipperIdSet: boolean;
 
   @Prop({ required: true })
   userHash: string;
@@ -52,3 +58,6 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// Create index for uuid
+UserSchema.index({ uuid: 1 }, { unique: true });

@@ -12,6 +12,15 @@ export class UpdateUserDto {
   name?: string;
 
   @ApiProperty({
+    description: 'Unique tipper ID for the user (can only be set once)',
+    example: 'john123',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  tipper_id?: string;
+
+  @ApiProperty({
     description: 'Bank account number',
     example: '1234567890',
     required: false,
