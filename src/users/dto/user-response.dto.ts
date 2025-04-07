@@ -1,38 +1,87 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UserResponseDto {
-  @ApiProperty({ description: 'User ID', example: 'user123' })
+  @ApiProperty({
+    description: 'Unique identifier of the user',
+    example: '507f1f77bcf86cd799439011',
+  })
   _id: string;
 
   @ApiProperty({
-    description: 'User UUID',
-    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'UUID of the user',
+    example: 'oc-550e8400-e29b-41d4-a716-446655440000',
   })
   uuid: string;
 
-  @ApiProperty({ description: 'User name', example: 'John Doe' })
+  @ApiProperty({
+    description: 'Name of the user',
+    example: 'John Doe',
+  })
   name: string;
 
-  @ApiProperty({ description: 'User email', example: 'john@example.com' })
+  @ApiProperty({
+    description: 'Email address of the user',
+    example: 'john@example.com',
+  })
   email: string;
 
-  @ApiProperty({ description: 'User tipper ID', example: 'tipper123' })
+  @ApiProperty({
+    description: 'Unique tipper ID',
+    example: 'john123',
+  })
   tipper_id: string;
 
-  @ApiProperty({ description: 'Whether tipping is enabled', example: true })
+  @ApiProperty({
+    description: 'Whether tipping is enabled for the user',
+    example: true,
+  })
   tippingEnabled: boolean;
 
   @ApiProperty({
-    description: 'Bank details verification status',
+    description: 'Bank details of the user',
     example: {
+      accountNumber: '1234567890',
+      ifscCode: 'ABCD0001234',
+      accountHolderName: 'John Doe',
+      bankName: 'State Bank of India',
       isVerified: true,
       verificationStatus: 'VERIFIED',
-      lastVerificationAttempt: '2024-03-20T10:30:00.000Z',
+      lastVerificationAttempt: '2024-03-20T10:00:00.000Z',
+      verificationError: null,
     },
   })
   bankDetails: {
+    accountNumber: string;
+    ifscCode: string;
+    accountHolderName: string;
+    bankName: string;
     isVerified: boolean;
-    verificationStatus: string;
+    verificationStatus: 'PENDING' | 'VERIFIED' | 'FAILED';
     lastVerificationAttempt: Date | null;
+    verificationError: string | null;
+  };
+
+  @ApiProperty({
+    description: 'User metadata including profile and tipper page details',
+    example: {
+      picture: 'https://example.com/picture.jpg',
+      tipperPage: {
+        title: 'My Tipper Page',
+        description: 'Welcome to my page!',
+        profileImage: 'https://example.com/profile.jpg',
+        coverImage: 'https://example.com/cover.jpg',
+        backgroundImage: 'https://example.com/background.jpg',
+      },
+    },
+  })
+  _metadata: {
+    picture: string;
+    tipperPage: {
+      title: string;
+      description: string;
+      profileImage: string;
+      coverImage: string;
+      backgroundImage: string;
+    };
   };
 }

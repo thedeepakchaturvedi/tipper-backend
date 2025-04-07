@@ -50,6 +50,30 @@ export class User {
     verificationError: string | null;
   };
 
+  @Prop({
+    type: {
+      picture: { type: String, default: '' },
+      tipperPage: {
+        title: { type: String, default: '' },
+        description: { type: String, default: '' },
+        profileImage: { type: String, default: '' },
+        coverImage: { type: String, default: '' },
+        backgroundImage: { type: String, default: '' },
+      },
+    },
+    default: {},
+  })
+  _metadata: {
+    picture: string;
+    tipperPage: {
+      title: string;
+      description: string;
+      profileImage: string;
+      coverImage: string;
+      backgroundImage: string;
+    };
+  };
+
   @Prop()
   createdAt: Date;
 

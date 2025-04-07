@@ -100,6 +100,7 @@ export class UsersService {
       tipper_id: user.tipper_id,
       tippingEnabled: user.tippingEnabled,
       bankDetails: user.bankDetails,
+      _metadata: user._metadata,
     };
   }
 
@@ -201,6 +202,31 @@ export class UsersService {
         verificationStatus: 'PENDING',
         lastVerificationAttempt: null,
         verificationError: null,
+      };
+    }
+
+    // Update metadata if provided
+    if (updateUserDto._metadata) {
+      user._metadata = {
+        ...user._metadata,
+        picture: updateUserDto._metadata.picture || user._metadata.picture,
+        tipperPage: {
+          title:
+            updateUserDto._metadata.tipperPage?.title ||
+            user._metadata.tipperPage.title,
+          description:
+            updateUserDto._metadata.tipperPage?.description ||
+            user._metadata.tipperPage.description,
+          profileImage:
+            updateUserDto._metadata.tipperPage?.profileImage ||
+            user._metadata.tipperPage.profileImage,
+          coverImage:
+            updateUserDto._metadata.tipperPage?.coverImage ||
+            user._metadata.tipperPage.coverImage,
+          backgroundImage:
+            updateUserDto._metadata.tipperPage?.backgroundImage ||
+            user._metadata.tipperPage.backgroundImage,
+        },
       };
     }
 

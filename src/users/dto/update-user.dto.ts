@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserDto {
@@ -64,4 +64,31 @@ export class UpdateUserDto {
   @IsBoolean()
   @IsOptional()
   tippingEnabled?: boolean;
+
+  @ApiProperty({
+    description: 'User metadata including profile and tipper page details',
+    example: {
+      picture: 'https://example.com/picture.jpg',
+      tipperPage: {
+        title: 'My Tipper Page',
+        description: 'Welcome to my page!',
+        profileImage: 'https://example.com/profile.jpg',
+        coverImage: 'https://example.com/cover.jpg',
+        backgroundImage: 'https://example.com/background.jpg',
+      },
+    },
+    required: false,
+  })
+  @IsOptional()
+  @IsObject()
+  _metadata?: {
+    picture?: string;
+    tipperPage?: {
+      title?: string;
+      description?: string;
+      profileImage?: string;
+      coverImage?: string;
+      backgroundImage?: string;
+    };
+  };
 }
