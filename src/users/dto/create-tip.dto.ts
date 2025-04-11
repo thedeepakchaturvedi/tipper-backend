@@ -1,4 +1,10 @@
-import { IsNumber, IsString, IsNotEmpty, Min } from 'class-validator';
+import {
+  IsNumber,
+  IsString,
+  IsNotEmpty,
+  Min,
+  IsOptional,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { SupportedCurrencies } from './supported-currencies.dto';
 
@@ -33,8 +39,9 @@ export class CreateTipDto {
   @ApiProperty({
     description: 'Optional message with the tip',
     example: 'Great work!',
+    required: false,
   })
   @IsString()
-  @IsNotEmpty()
-  message: string;
+  @IsOptional()
+  message?: string;
 }

@@ -24,6 +24,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { TipResponseDto } from './dto/tip-response.dto';
 import { ObjectId } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
 interface MongoError extends Error {
   code: number;
@@ -34,9 +35,11 @@ interface TransactionDocument {
   amount: number;
   currency: string;
   senderName: string;
+  message?: string;
   status: string;
   paymentId?: string;
   errorMessage?: string;
+  isBanned: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,6 +87,10 @@ interface TransactionQuery {
     $gte?: Date;
     $lte?: Date;
   };
+  isBanned?: boolean;
+  $or?: Array<{
+    isBanned?: boolean | { $exists: boolean };
+  }>;
 }
 
 @Injectable()
@@ -341,6 +348,12 @@ export class UsersService {
 
     const query: TransactionQuery = {};
 
+    // Handle banned transactions filter
+    if (!filterDto.includeBanned) {
+      // Include transactions where isBanned is false OR isBanned doesn't exist
+      query.$or = [{ isBanned: false }, { isBanned: { $exists: false } }];
+    }
+
     if (filterDto.status) {
       query.status = filterDto.status;
     }
@@ -362,7 +375,6 @@ export class UsersService {
       }
     }
 
-    // Add date filter if afterDate is provided
     if (filterDto.afterDate) {
       query.createdAt = {
         $gte: new Date(filterDto.afterDate),
@@ -387,6 +399,7 @@ export class UsersService {
       amount: transaction.amount,
       currency: transaction.currency,
       senderName: transaction.senderName,
+      message: transaction.message || null,
       status: transaction.status,
       paymentId: transaction.paymentId || null,
       errorMessage: transaction.errorMessage || null,
@@ -423,7 +436,9 @@ export class UsersService {
       amount: createTipDto.amount,
       currency: createTipDto.currency,
       senderName: createTipDto.senderName,
+      message: createTipDto.message || '',
       status: 'pending',
+      isBanned: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -503,6 +518,55 @@ export class UsersService {
       }
       return this.sanitizeTipResponse(updatedTransaction);
     }
+  }
+
+  async updateTransaction(
+    tipper_id: string,
+    transactionId: string,
+    updateTransactionDto: UpdateTransactionDto,
+  ): Promise<{ success: boolean; message: string }> {
+    const user = await this.userModel.findOne({ tipper_id });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const collectionName = `${tipper_id}.transactions`;
+    const transactionCollection = this.connection.db.collection(collectionName);
+
+    // Prepare update object with proper typing
+    const updateData: {
+      isBanned?: boolean;
+      status?: string;
+      errorMessage?: string;
+      updatedAt: Date;
+    } = {
+      updatedAt: new Date(),
+    };
+
+    // Add fields to update if they are provided
+    if (updateTransactionDto.isBanned !== undefined) {
+      updateData.isBanned = updateTransactionDto.isBanned;
+    }
+    if (updateTransactionDto.status) {
+      updateData.status = updateTransactionDto.status;
+    }
+    if (updateTransactionDto.errorMessage !== undefined) {
+      updateData.errorMessage = updateTransactionDto.errorMessage;
+    }
+
+    const result = await transactionCollection.updateOne(
+      { _id: new ObjectId(transactionId) },
+      { $set: updateData },
+    );
+
+    if (result.matchedCount === 0) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    return {
+      success: true,
+      message: 'Transaction updated successfully',
+    };
   }
 
   async getDashboard(

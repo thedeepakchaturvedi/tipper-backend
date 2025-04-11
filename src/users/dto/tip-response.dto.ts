@@ -13,6 +13,9 @@ export class TipResponseDto {
   @ApiProperty({ description: 'Sender name', example: 'John Doe' })
   senderName: string;
 
+  @ApiProperty({ description: 'Message from the sender', nullable: true })
+  message: string | null;
+
   @ApiProperty({
     description: 'Transaction status',
     enum: ['COMPLETED', 'FAILED', 'PENDING'],

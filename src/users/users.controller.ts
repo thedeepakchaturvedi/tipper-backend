@@ -8,6 +8,7 @@ import {
   Put,
   Query,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -30,6 +31,7 @@ import {
 import { SupportedCurrencies } from 'src/users/dto/supported-currencies.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { TipResponseDto } from './dto/tip-response.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -301,5 +303,33 @@ export class UsersController {
     @Query() params: DashboardParamsDto,
   ): Promise<DashboardResponse> {
     return this.usersService.getDashboard(tipperId, params);
+  }
+
+  @Patch(':tipper_id/transactions/:transactionId')
+  @ApiOperation({ summary: 'Update a transaction' })
+  @ApiParam({ name: 'tipper_id', description: 'User ID' })
+  @ApiParam({ name: 'transactionId', description: 'Transaction ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Transaction updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'User or transaction not found' })
+  async updateTransaction(
+    @Param('tipper_id') tipper_id: string,
+    @Param('transactionId') transactionId: string,
+    @Body() updateTransactionDto: UpdateTransactionDto,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.usersService.updateTransaction(
+      tipper_id,
+      transactionId,
+      updateTransactionDto,
+    );
   }
 }

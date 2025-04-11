@@ -20,6 +20,9 @@ export class Transaction {
   @Prop({ required: true })
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
 
+  @Prop({ default: false })
+  isBanned: boolean;
+
   @Prop()
   paymentId?: string;
 

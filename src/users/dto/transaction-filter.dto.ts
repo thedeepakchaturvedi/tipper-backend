@@ -5,6 +5,7 @@ import {
   IsString,
   Min,
   IsDateString,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -69,4 +70,13 @@ export class TransactionFilterDto {
   @IsOptional()
   @IsDateString()
   afterDate?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Include banned transactions in the results',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  includeBanned?: boolean;
 }
