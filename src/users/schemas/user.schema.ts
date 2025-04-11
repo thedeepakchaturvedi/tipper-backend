@@ -73,6 +73,7 @@ export class User {
           fileName: '',
         },
       },
+      streamLink: '',
     },
   })
   _metadata: {
@@ -96,6 +97,7 @@ export class User {
         fileName: string;
       };
     };
+    streamLink: string;
   };
 
   @Prop()

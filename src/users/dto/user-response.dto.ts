@@ -99,6 +99,7 @@ export class UserResponseDto {
           },
         },
       },
+      streamLink: { type: 'string' },
     },
   })
   _metadata: {
@@ -122,5 +123,28 @@ export class UserResponseDto {
         fileName: string;
       };
     };
+    streamLink: string;
+  } = {
+    picture: {
+      url: '',
+      fileName: '',
+    },
+    tipperPage: {
+      title: '',
+      description: '',
+      profileImage: {
+        url: '',
+        fileName: '',
+      },
+      coverImage: {
+        url: '',
+        fileName: '',
+      },
+      backgroundImage: {
+        url: '',
+        fileName: '',
+      },
+    },
+    streamLink: '',
   };
 }

@@ -89,6 +89,7 @@ export class UpdateUserDto {
           fileName: 'background-image.jpg',
         },
       },
+      streamLink: 'https://example.com/stream-link',
     },
   })
   @IsOptional()
@@ -114,5 +115,6 @@ export class UpdateUserDto {
         fileName?: string;
       };
     };
+    streamLink?: string;
   };
 }

@@ -268,6 +268,8 @@ export class UsersService {
               '',
           },
         },
+        streamLink:
+          updateUserDto._metadata.streamLink || user._metadata.streamLink || '',
       };
     }
 
