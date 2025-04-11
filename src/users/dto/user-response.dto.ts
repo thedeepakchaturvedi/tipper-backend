@@ -62,26 +62,65 @@ export class UserResponseDto {
   };
 
   @ApiProperty({
-    description: 'User metadata including profile and tipper page details',
-    example: {
-      picture: 'https://example.com/picture.jpg',
+    type: 'object',
+    properties: {
+      picture: {
+        type: 'object',
+        properties: {
+          url: { type: 'string' },
+          fileName: { type: 'string' },
+        },
+      },
       tipperPage: {
-        title: 'My Tipper Page',
-        description: 'Welcome to my page!',
-        profileImage: 'https://example.com/profile.jpg',
-        coverImage: 'https://example.com/cover.jpg',
-        backgroundImage: 'https://example.com/background.jpg',
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          description: { type: 'string' },
+          profileImage: {
+            type: 'object',
+            properties: {
+              url: { type: 'string' },
+              fileName: { type: 'string' },
+            },
+          },
+          coverImage: {
+            type: 'object',
+            properties: {
+              url: { type: 'string' },
+              fileName: { type: 'string' },
+            },
+          },
+          backgroundImage: {
+            type: 'object',
+            properties: {
+              url: { type: 'string' },
+              fileName: { type: 'string' },
+            },
+          },
+        },
       },
     },
   })
   _metadata: {
-    picture: string;
+    picture: {
+      url: string;
+      fileName: string;
+    };
     tipperPage: {
       title: string;
       description: string;
-      profileImage: string;
-      coverImage: string;
-      backgroundImage: string;
+      profileImage: {
+        url: string;
+        fileName: string;
+      };
+      coverImage: {
+        url: string;
+        fileName: string;
+      };
+      backgroundImage: {
+        url: string;
+        fileName: string;
+      };
     };
   };
 }

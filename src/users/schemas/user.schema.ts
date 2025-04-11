@@ -51,26 +51,50 @@ export class User {
   };
 
   @Prop({
-    type: {
-      picture: { type: String, default: '' },
+    type: Object,
+    default: {
+      picture: {
+        url: '',
+        fileName: '',
+      },
       tipperPage: {
-        title: { type: String, default: '' },
-        description: { type: String, default: '' },
-        profileImage: { type: String, default: '' },
-        coverImage: { type: String, default: '' },
-        backgroundImage: { type: String, default: '' },
+        title: '',
+        description: '',
+        profileImage: {
+          url: '',
+          fileName: '',
+        },
+        coverImage: {
+          url: '',
+          fileName: '',
+        },
+        backgroundImage: {
+          url: '',
+          fileName: '',
+        },
       },
     },
-    default: {},
   })
   _metadata: {
-    picture: string;
+    picture: {
+      url: string;
+      fileName: string;
+    };
     tipperPage: {
       title: string;
       description: string;
-      profileImage: string;
-      coverImage: string;
-      backgroundImage: string;
+      profileImage: {
+        url: string;
+        fileName: string;
+      };
+      coverImage: {
+        url: string;
+        fileName: string;
+      };
+      backgroundImage: {
+        url: string;
+        fileName: string;
+      };
     };
   };
 

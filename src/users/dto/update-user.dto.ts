@@ -66,29 +66,53 @@ export class UpdateUserDto {
   tippingEnabled?: boolean;
 
   @ApiProperty({
-    description: 'User metadata including profile and tipper page details',
+    required: false,
+    description: 'User metadata',
     example: {
-      picture: 'https://example.com/picture.jpg',
+      picture: {
+        url: 'https://example.com/picture.jpg',
+        fileName: 'profile-picture.jpg',
+      },
       tipperPage: {
         title: 'My Tipper Page',
         description: 'Welcome to my page!',
-        profileImage: 'https://example.com/profile.jpg',
-        coverImage: 'https://example.com/cover.jpg',
-        backgroundImage: 'https://example.com/background.jpg',
+        profileImage: {
+          url: 'https://example.com/profile.jpg',
+          fileName: 'profile-image.jpg',
+        },
+        coverImage: {
+          url: 'https://example.com/cover.jpg',
+          fileName: 'cover-image.jpg',
+        },
+        backgroundImage: {
+          url: 'https://example.com/background.jpg',
+          fileName: 'background-image.jpg',
+        },
       },
     },
-    required: false,
   })
   @IsOptional()
   @IsObject()
   _metadata?: {
-    picture?: string;
+    picture?: {
+      url?: string;
+      fileName?: string;
+    };
     tipperPage?: {
       title?: string;
       description?: string;
-      profileImage?: string;
-      coverImage?: string;
-      backgroundImage?: string;
+      profileImage?: {
+        url?: string;
+        fileName?: string;
+      };
+      coverImage?: {
+        url?: string;
+        fileName?: string;
+      };
+      backgroundImage?: {
+        url?: string;
+        fileName?: string;
+      };
     };
   };
 }

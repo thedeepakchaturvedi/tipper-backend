@@ -220,7 +220,16 @@ export class UsersService {
     if (updateUserDto._metadata) {
       user._metadata = {
         ...user._metadata,
-        picture: updateUserDto._metadata.picture || user._metadata.picture,
+        picture: {
+          url:
+            updateUserDto._metadata.picture?.url ||
+            user._metadata.picture?.url ||
+            '',
+          fileName:
+            updateUserDto._metadata.picture?.fileName ||
+            user._metadata.picture?.fileName ||
+            '',
+        },
         tipperPage: {
           title:
             updateUserDto._metadata.tipperPage?.title ||
@@ -228,15 +237,36 @@ export class UsersService {
           description:
             updateUserDto._metadata.tipperPage?.description ||
             user._metadata.tipperPage.description,
-          profileImage:
-            updateUserDto._metadata.tipperPage?.profileImage ||
-            user._metadata.tipperPage.profileImage,
-          coverImage:
-            updateUserDto._metadata.tipperPage?.coverImage ||
-            user._metadata.tipperPage.coverImage,
-          backgroundImage:
-            updateUserDto._metadata.tipperPage?.backgroundImage ||
-            user._metadata.tipperPage.backgroundImage,
+          profileImage: {
+            url:
+              updateUserDto._metadata.tipperPage?.profileImage?.url ||
+              user._metadata.tipperPage.profileImage?.url ||
+              '',
+            fileName:
+              updateUserDto._metadata.tipperPage?.profileImage?.fileName ||
+              user._metadata.tipperPage.profileImage?.fileName ||
+              '',
+          },
+          coverImage: {
+            url:
+              updateUserDto._metadata.tipperPage?.coverImage?.url ||
+              user._metadata.tipperPage.coverImage?.url ||
+              '',
+            fileName:
+              updateUserDto._metadata.tipperPage?.coverImage?.fileName ||
+              user._metadata.tipperPage.coverImage?.fileName ||
+              '',
+          },
+          backgroundImage: {
+            url:
+              updateUserDto._metadata.tipperPage?.backgroundImage?.url ||
+              user._metadata.tipperPage.backgroundImage?.url ||
+              '',
+            fileName:
+              updateUserDto._metadata.tipperPage?.backgroundImage?.fileName ||
+              user._metadata.tipperPage.backgroundImage?.fileName ||
+              '',
+          },
         },
       };
     }
