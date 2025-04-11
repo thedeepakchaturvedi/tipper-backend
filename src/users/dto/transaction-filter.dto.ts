@@ -1,4 +1,11 @@
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { SupportedCurrencies } from './supported-currencies.dto';
@@ -53,4 +60,13 @@ export class TransactionFilterDto {
   @IsNumber()
   @Min(0)
   maxAmount?: number;
+
+  @ApiProperty({
+    required: false,
+    description: 'Filter transactions after this date (ISO format)',
+    example: '2024-03-20T10:00:00.000Z',
+  })
+  @IsOptional()
+  @IsDateString()
+  afterDate?: string;
 }

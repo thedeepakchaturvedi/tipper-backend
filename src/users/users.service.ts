@@ -80,6 +80,10 @@ interface TransactionQuery {
     $gte?: number;
     $lte?: number;
   };
+  createdAt?: {
+    $gte?: Date;
+    $lte?: Date;
+  };
 }
 
 @Injectable()
@@ -356,6 +360,14 @@ export class UsersService {
       if (filterDto.maxAmount !== undefined) {
         query.amount.$lte = filterDto.maxAmount;
       }
+    }
+
+    // Add date filter if afterDate is provided
+    if (filterDto.afterDate) {
+      query.createdAt = {
+        $gte: new Date(filterDto.afterDate),
+        $lte: new Date(), // Current date/time
+      };
     }
 
     return this.connection.db
