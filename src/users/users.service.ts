@@ -23,10 +23,18 @@ import { TransactionFilterDto } from './dto/transaction-filter.dto';
 import { DashboardParamsDto } from './dto/dashboard-params.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { TipResponseDto } from './dto/tip-response.dto';
-import { ObjectId } from 'mongodb';
+import { Collection, InsertOneResult, ObjectId } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { RazorpayService } from './services/razorpay.service';
+import { RazorpayPaymentService } from './services/razorpay-payment.service';
+import { ConfigService } from '@nestjs/config';
+import { VerifyTipDto } from './dto/verify-tip.dto';
+import {
+  DEFAULT_TIPPPER_FEE_PERCENTAGE,
+  GST_PERCENTAGE,
+  RAZORPAY_FEE_PERCENTAGE,
+} from '../utils/app.constants';
 
 interface MongoError extends Error {
   code: number;
@@ -107,6 +115,9 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectConnection() private connection: Connection,
     @Inject(RazorpayService) private razorpayService: RazorpayService,
+    @Inject(RazorpayPaymentService)
+    private razorpayPaymentService: RazorpayPaymentService,
+    @Inject(ConfigService) private configService: ConfigService,
     private paymentGatewayService: PaymentGatewayService,
     private currencyConversionService: CurrencyConversionService,
   ) {}
@@ -558,10 +569,7 @@ export class UsersService {
     };
   }
 
-  async createTip(
-    tipper_id: string,
-    createTipDto: CreateTipDto,
-  ): Promise<TipResponseDto> {
+  async createTip(tipper_id: string, createTipDto: CreateTipDto): Promise<any> {
     const user = await this.userModel.findOne({ tipper_id });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -571,7 +579,11 @@ export class UsersService {
       throw new BadRequestException('User tipping is not enabled');
     }
 
-    if (!user.bankDetails || !user.bankDetails.isVerified) {
+    if (
+      !user.bankDetails ||
+      !user.bankDetails.isVerified ||
+      user.razorpay_activation_status !== 'activated'
+    ) {
       throw new BadRequestException('User bank details not verified');
     }
 
@@ -602,71 +614,196 @@ export class UsersService {
       throw new Error('Failed to create transaction');
     }
 
+    if (this.configService.get<string>('BYPASS_TRANSACTION') === 'true') {
+      console.log('***************************');
+      console.log('Transaction Bypassed');
+      console.log('***************************');
+      return this.mockPayment(
+        createTipDto,
+        user,
+        transactionCollection,
+        result,
+      );
+    } else {
+      try {
+        const amountInPaisa = Math.round(createTipDto.amount * 100);
+        const currency = 'INR';
+        const receiptId = `tip_${uuidv4()}`;
+
+        console.log(
+          `Initiating tip order for creator ${user.tipper_id} (RZP: ${user.razorpay_account_id}), Amount: ${amountInPaisa} paisa with Receipt ID: ${receiptId}`,
+        );
+
+        const order: { id: string } =
+          await this.razorpayPaymentService.createOrder(
+            amountInPaisa,
+            currency,
+            receiptId,
+          );
+
+        console.log('Razorpay Order Created:', order);
+
+        // update the transaction with the order ID and status
+        await transactionCollection.updateOne(
+          { _id: result.insertedId },
+          {
+            $set: {
+              status: 'order created',
+              paymentId: receiptId,
+              razorpayOrderId: order.id,
+              updatedAt: new Date(),
+            },
+          },
+        );
+
+        return order;
+      } catch (error) {
+        console.error('Error in initiateTip:', error);
+        throw error;
+      }
+    }
+  }
+
+  async verifyTip(
+    tipper_id: string,
+    tipperPaymentId,
+    verifyTipDto: VerifyTipDto,
+  ): Promise<any> {
     try {
-      const paymentResult = await this.paymentGatewayService.createOrder(
-        createTipDto.amount,
-        createTipDto.currency,
+      const { razorpayOrderId, razorpaySignature, razorpayPaymentId } =
+        verifyTipDto;
+
+      if (!razorpayOrderId || !razorpaySignature || !razorpayPaymentId) {
+        throw new BadRequestException(
+          'Missing required payment verification details or target creator ID.',
+        );
+      }
+
+      // 1. Verify Payment Signature
+      const isSignatureValid =
+        this.razorpayPaymentService.verifyPaymentSignature(
+          razorpayOrderId,
+          razorpayPaymentId,
+          razorpaySignature,
+        );
+
+      if (!isSignatureValid) {
+        console.warn(`Invalid payment signature for order ${razorpayOrderId}`);
+        throw new BadRequestException(
+          'Payment verification failed: Invalid signature.',
+        );
+      }
+
+      console.log(
+        `Payment signature verified for order ${razorpayOrderId}, payment ${razorpayPaymentId}`,
       );
 
-      if (paymentResult.success) {
-        await transactionCollection.updateOne(
-          { _id: result.insertedId },
-          {
-            $set: {
-              status: 'completed',
-              paymentId: paymentResult.paymentId,
-              updatedAt: new Date(),
-            },
-          },
+      // 2. Fetch Payment Details (Reliable Amount & Status)
+      const payment: { status: string; [key: string]: any } =
+        await this.razorpayPaymentService.fetchPayment(razorpayPaymentId);
+
+      if (payment.status !== 'captured') {
+        console.warn(
+          `Payment ${razorpayPaymentId} not captured. Status: ${payment.status}`,
         );
-        const updatedTransaction =
-          await transactionCollection.findOne<TransactionDocument>({
-            _id: result.insertedId,
-          });
-        if (!updatedTransaction) {
-          throw new Error('Failed to update transaction');
-        }
-        return this.sanitizeTipResponse(updatedTransaction);
-      } else {
-        await transactionCollection.updateOne(
-          { _id: result.insertedId },
-          {
-            $set: {
-              status: 'failed',
-              errorMessage: paymentResult.error,
-              updatedAt: new Date(),
-            },
-          },
+        throw new BadRequestException(
+          `Payment not captured yet (Status: ${payment.status}).`,
         );
-        const updatedTransaction =
-          await transactionCollection.findOne<TransactionDocument>({
-            _id: result.insertedId,
-          });
-        if (!updatedTransaction) {
-          throw new Error('Failed to update transaction');
-        }
-        return this.sanitizeTipResponse(updatedTransaction);
       }
-    } catch (error) {
+
+      const paymentAmount = payment.amount; // Amount in paisa
+
+      // 3. Find Target Creator (Check again)
+      const user = await this.userModel.findOne({ tipper_id });
+      if (
+        !user ||
+        !user.razorpay_account_id ||
+        user.razorpay_activation_status !== 'activated'
+      ) {
+        console.error(
+          `Cannot create transfer: Target creator ${tipper_id} not found/activated after payment.`,
+        );
+        throw new BadRequestException(
+          'Target creator cannot receive transfer.',
+        );
+      }
+
+      console.log(
+        `Calculating transfer for Gross Amount: ${paymentAmount} paisa`,
+      );
+
+      // 4. Calculate Transfer Amount
+      const razorpayFee = Math.floor(paymentAmount * RAZORPAY_FEE_PERCENTAGE);
+      const gstOnFee = Math.floor(razorpayFee * GST_PERCENTAGE);
+      const tipperFee = Math.floor(
+        paymentAmount * DEFAULT_TIPPPER_FEE_PERCENTAGE,
+      );
+
+      const totalDeductions = razorpayFee + gstOnFee + tipperFee;
+      const netAmount = paymentAmount - totalDeductions;
+
+      console.log(
+        `Razorpay Fee: ${razorpayFee}, GST on Fee: ${gstOnFee}, Total Deduction: ${totalDeductions}, Net Amount: ${netAmount}`,
+      );
+
+      if (netAmount <= 0) {
+        console.warn(
+          `Net amount after fee/GST deduction is zero or negative for payment ${razorpayPaymentId}.`,
+        );
+        return {
+          success: false,
+          message:
+            'Net amount is zero or negative after deductions. No transfer created.',
+        };
+      }
+
+      // 5. Create Transfer
+      const transferResponse: { [key: string]: any } =
+        await this.razorpayPaymentService.createTransfer(
+          razorpayPaymentId,
+          user.razorpay_account_id,
+          netAmount,
+          'INR',
+          {
+            platform_tip_reference: razorpayOrderId,
+            tipper_id,
+          },
+        );
+      const transferId =
+        transferResponse.id ||
+        (transferResponse.items &&
+          Array.isArray(transferResponse.items) &&
+          transferResponse.items[0]?.id);
+
+      console.log(`Transfer created successfully:`, transferResponse);
+
+      // update the transaction in the db
+      const transactionCollection = this.connection.db.collection(
+        `${tipper_id}.transactions`,
+      );
       await transactionCollection.updateOne(
-        { _id: result.insertedId },
+        { paymentId: tipperPaymentId },
         {
           $set: {
-            status: 'failed',
-            errorMessage:
-              error instanceof Error ? error.message : 'Unknown error',
+            status: 'completed',
+            razorpayPaymentId: razorpayPaymentId,
+            razorpayTransferId: transferId,
             updatedAt: new Date(),
           },
         },
       );
-      const updatedTransaction =
-        await transactionCollection.findOne<TransactionDocument>({
-          _id: result.insertedId,
-        });
-      if (!updatedTransaction) {
-        throw new Error('Failed to update transaction');
-      }
-      return this.sanitizeTipResponse(updatedTransaction);
+      console.log(
+        `Transaction updated successfully for payment ${razorpayPaymentId}`,
+      );
+
+      return {
+        success: true,
+        message: 'Payment verified and transfer created successfully.',
+        transferId,
+      };
+    } catch (error) {
+      console.error('Error in verifyTip:', error);
+      throw error;
     }
   }
 
@@ -831,5 +968,79 @@ export class UsersService {
       summary,
       recentTransactions,
     };
+  }
+
+  async mockPayment(
+    createTipDto: CreateTipDto,
+    user: User,
+    transactionCollection: Collection,
+    result: InsertOneResult,
+  ): Promise<TipResponseDto> {
+    try {
+      const paymentResult = await this.paymentGatewayService.createOrder(
+        createTipDto.amount,
+        createTipDto.currency,
+      );
+
+      if (paymentResult.success) {
+        await transactionCollection.updateOne(
+          { _id: result.insertedId },
+          {
+            $set: {
+              status: 'completed',
+              paymentId: paymentResult.paymentId,
+              updatedAt: new Date(),
+            },
+          },
+        );
+        const updatedTransaction =
+          await transactionCollection.findOne<TransactionDocument>({
+            _id: result.insertedId,
+          });
+        if (!updatedTransaction) {
+          throw new Error('Failed to update transaction');
+        }
+        return this.sanitizeTipResponse(updatedTransaction);
+      } else {
+        await transactionCollection.updateOne(
+          { _id: result.insertedId },
+          {
+            $set: {
+              status: 'failed',
+              errorMessage: paymentResult.error,
+              updatedAt: new Date(),
+            },
+          },
+        );
+        const updatedTransaction =
+          await transactionCollection.findOne<TransactionDocument>({
+            _id: result.insertedId,
+          });
+        if (!updatedTransaction) {
+          throw new Error('Failed to update transaction');
+        }
+        return this.sanitizeTipResponse(updatedTransaction);
+      }
+    } catch (error) {
+      await transactionCollection.updateOne(
+        { _id: result.insertedId },
+        {
+          $set: {
+            status: 'failed',
+            errorMessage:
+              error instanceof Error ? error.message : 'Unknown error',
+            updatedAt: new Date(),
+          },
+        },
+      );
+      const updatedTransaction =
+        await transactionCollection.findOne<TransactionDocument>({
+          _id: result.insertedId,
+        });
+      if (!updatedTransaction) {
+        throw new Error('Failed to update transaction');
+      }
+      return this.sanitizeTipResponse(updatedTransaction);
+    }
   }
 }

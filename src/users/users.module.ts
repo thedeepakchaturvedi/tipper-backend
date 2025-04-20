@@ -6,6 +6,7 @@ import { UsersController } from './users.controller';
 import { PaymentGatewayService } from './services/payment-gateway.service';
 import { CurrencyConversionService } from './services/currency-conversion.service';
 import { RazorpayService } from './services/razorpay.service';
+import { RazorpayPaymentService } from './services/razorpay-payment.service';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { RazorpayService } from './services/razorpay.service';
     PaymentGatewayService,
     CurrencyConversionService,
     RazorpayService,
+    RazorpayPaymentService,
   ],
   exports: [UsersService],
 })

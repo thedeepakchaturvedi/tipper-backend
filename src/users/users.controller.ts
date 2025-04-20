@@ -32,6 +32,7 @@ import { SupportedCurrencies } from 'src/users/dto/supported-currencies.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { TipResponseDto } from './dto/tip-response.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { VerifyTipDto } from './dto/verify-tip.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -144,6 +145,26 @@ export class UsersController {
     @Body() createTipDto: CreateTipDto,
   ): Promise<TipResponseDto> {
     return this.usersService.createTip(id, createTipDto);
+  }
+
+  @Post(':id/tip/:tipperPaymentId/verify')
+  @ApiOperation({ summary: 'Verify already created tip for a user' })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID (tipper_id)',
+    example: 'user123',
+  })
+  @ApiParam({
+    name: 'tipperPaymentId',
+    description: 'Payment ID',
+    example: 'tip_84b37052-2689-4bbc-8238-0dc9edfd2c75',
+  })
+  async verifyTip(
+    @Param('id') id: string,
+    @Param('tipperPaymentId') tipperPaymentId: string,
+    @Body() verifyTipDto: VerifyTipDto,
+  ): Promise<any> {
+    return this.usersService.verifyTip(id, tipperPaymentId, verifyTipDto);
   }
 
   @UseGuards(AuthGuard)

@@ -27,6 +27,15 @@ export class Transaction {
   paymentId?: string;
 
   @Prop()
+  razorpayOrderId?: string;
+
+  @Prop()
+  razorpayPaymentId?: string;
+
+  @Prop()
+  razorpayTransferId?: string;
+
+  @Prop()
   errorMessage?: string;
 }
 
