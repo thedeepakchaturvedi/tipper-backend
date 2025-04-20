@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
@@ -25,9 +26,16 @@ import { TipResponseDto } from './dto/tip-response.dto';
 import { ObjectId } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { RazorpayService } from './services/razorpay.service';
 
 interface MongoError extends Error {
   code: number;
+}
+
+interface razorpayProductInterface {
+  id: string;
+  activation_status: string;
+  [key: string]: any;
 }
 
 interface TransactionDocument {
@@ -98,6 +106,7 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectConnection() private connection: Connection,
+    @Inject(RazorpayService) private razorpayService: RazorpayService,
     private paymentGatewayService: PaymentGatewayService,
     private currencyConversionService: CurrencyConversionService,
   ) {}
@@ -310,48 +319,157 @@ export class UsersService {
     return user ? this.sanitizeUserResponse(user) : null;
   }
 
-  async verifyBankDetails(tipper_id: string): Promise<UserResponseDto> {
+  async verifyBankDetails(tipper_id: string): Promise<any> {
     const user = await this.userModel.findOne({ tipper_id });
+    let razorpayAccountId = user?.razorpay_account_id;
+    let razorpayProductId = user?.razorpay_product_id;
+    let razorpayActivationStatus = user?.razorpay_activation_status;
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Mock payment gateway verification
-    // In real implementation, this would call the payment gateway API
-    interface VerificationResult {
-      success: boolean;
-      error: string | null;
+    // create razorpay account if not already created
+    if (!razorpayAccountId) {
+      const accountData = {
+        type: 'route',
+        email: user.email,
+        phone: '9090909090',
+        legal_business_name: user.bankDetails.accountHolderName,
+        business_type: 'individual',
+        contact_name: user.bankDetails.accountHolderName,
+        profile: {
+          category: 'media_and_entertainment',
+          subcategory: 'video_on_demand',
+          addresses: {
+            registered: {
+              street1: 'Ayush ka ghar',
+              street2: 'Deepak ki gali',
+              city: 'Namma Bengaluru',
+              state: 'KARNATAKA',
+              postal_code: '560034',
+              country: 'IN',
+            },
+          },
+        },
+      };
+      const rzpAccount: { id: string; [key: string]: any } =
+        await this.razorpayService.createLinkedAccount(accountData);
+      console.log('Razorpay Account Created:', rzpAccount);
+      razorpayAccountId = rzpAccount.id;
+      user.razorpay_account_id = razorpayAccountId;
+      await user.save();
     }
 
-    const mockVerificationResult: VerificationResult = {
-      success: true,
-      error: null,
+    // create individual stakeholder
+    if (razorpayAccountId) {
+      // considering business type is individual for now
+      let existingStakeholdersFound = false;
+      const existingStakeholders: { id: string; [key: string]: any } =
+        await this.razorpayService.fetchStakeholders(razorpayAccountId);
+      if (
+        existingStakeholders &&
+        existingStakeholders.items &&
+        Array.isArray(existingStakeholders.items)
+      ) {
+        // Check if stakeholder with matching email exists
+        existingStakeholdersFound = existingStakeholders.items.some(
+          (sh: { email: string }) =>
+            sh.email && sh.email.toLowerCase() === user.email.toLowerCase(),
+        );
+      }
+
+      console.log('Existing Stakeholders:', existingStakeholders);
+      console.log('Existing Stakeholders Found:', existingStakeholdersFound);
+
+      if (!existingStakeholdersFound) {
+        const individualStakeholderData = {
+          name: user.bankDetails.accountHolderName,
+          email: user.email,
+        };
+
+        await this.razorpayService.createStakeholder(
+          razorpayAccountId,
+          individualStakeholderData,
+        );
+        console.log(
+          'Individual Stakeholder Created with:',
+          individualStakeholderData,
+        );
+      }
+    }
+
+    // Request route product config if no product id is found
+    let rzpProduct: razorpayProductInterface;
+    if (!razorpayProductId) {
+      rzpProduct = await this.razorpayService.requestProductConfiguration(
+        razorpayAccountId,
+        'route',
+      );
+
+      console.log('Razorpay Product Config:', rzpProduct);
+      razorpayProductId = rzpProduct.id;
+      user.razorpay_product_id = razorpayProductId;
+      razorpayActivationStatus = rzpProduct.activation_status;
+      user.razorpay_activation_status = razorpayActivationStatus;
+      user.bankDetails.lastVerificationAttempt = new Date();
+
+      await user.save();
+    }
+
+    // Update Product config with Bank details
+    if (
+      razorpayAccountId &&
+      razorpayProductId &&
+      razorpayActivationStatus !== 'activated'
+    ) {
+      const updateData = {
+        settlements: {
+          name: user.bankDetails.accountHolderName,
+          account_number: user.bankDetails.accountNumber,
+          ifsc_code: user.bankDetails.ifscCode,
+          beneficiary_name: user.bankDetails.accountHolderName,
+        },
+        tnc_accepted: true,
+        // Add other KYC fields here
+      };
+      const updatedProduct: razorpayProductInterface =
+        await this.razorpayService.updateProductConfiguration(
+          razorpayAccountId,
+          razorpayProductId,
+          updateData,
+        );
+
+      console.log('Razorpay Product Updated:', updatedProduct);
+      razorpayActivationStatus = updatedProduct.activation_status;
+      user.razorpay_activation_status = razorpayActivationStatus;
+      await user.save();
+    }
+
+    user.bankDetails = {
+      ...user.bankDetails,
+      isVerified: false,
+      verificationStatus: 'PENDING',
+      verificationError: null,
     };
 
-    if (mockVerificationResult.success) {
-      user.bankDetails = {
-        ...user.bankDetails,
-        isVerified: true,
-        verificationStatus: 'VERIFIED',
-        lastVerificationAttempt: new Date(),
-        verificationError: null,
-      };
-
-      // Create transaction collection for verified user
+    if (razorpayActivationStatus === 'activated') {
+      user.bankDetails.isVerified = true;
+      user.bankDetails.verificationStatus = 'VERIFIED';
+      // Create transaction collection if it doesn't exist
       await this.createTransactionCollection(tipper_id);
-    } else {
-      user.bankDetails = {
-        ...user.bankDetails,
-        isVerified: false,
-        verificationStatus: 'FAILED',
-        lastVerificationAttempt: new Date(),
-        verificationError:
-          mockVerificationResult.error || 'Verification failed',
-      };
     }
 
-    const updatedUser = await user.save();
-    return this.sanitizeUserResponse(updatedUser);
+    await user.save();
+    return {
+      status: {
+        razorpayActivationStatus: razorpayActivationStatus,
+        bankStatus: user.bankDetails.verificationStatus,
+        message:
+          razorpayActivationStatus === 'activated'
+            ? 'Bank details verified'
+            : 'Bank details verification initiated',
+      },
+    };
   }
 
   async getTransactions(
@@ -485,7 +603,7 @@ export class UsersService {
     }
 
     try {
-      const paymentResult = await this.paymentGatewayService.processPayment(
+      const paymentResult = await this.paymentGatewayService.createOrder(
         createTipDto.amount,
         createTipDto.currency,
       );

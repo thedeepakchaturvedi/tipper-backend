@@ -26,6 +26,15 @@ export class User {
   @Prop({ default: false })
   tippingEnabled: boolean;
 
+  @Prop({ default: '' })
+  razorpay_account_id: string;
+
+  @Prop({ default: '' })
+  razorpay_product_id: string;
+
+  @Prop({ default: '' })
+  razorpay_activation_status: string;
+
   @Prop({
     type: {
       accountNumber: { type: String, default: '' },
@@ -108,6 +117,3 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-// Create index for uuid
-UserSchema.index({ uuid: 1 }, { unique: true });

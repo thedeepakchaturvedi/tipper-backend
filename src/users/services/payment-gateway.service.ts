@@ -8,7 +8,7 @@ interface PaymentResponse {
 
 @Injectable()
 export class PaymentGatewayService {
-  async processPayment(
+  async createOrder(
     amount: number,
     currency: string,
   ): Promise<PaymentResponse> {
