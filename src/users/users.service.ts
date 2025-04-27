@@ -193,6 +193,10 @@ export class UsersService {
       user.name = updateUserDto.name;
     }
 
+    if (updateUserDto.phone) {
+      user.phone = updateUserDto.phone;
+    }
+
     if (typeof updateUserDto.tippingEnabled === 'boolean') {
       user.tippingEnabled = updateUserDto.tippingEnabled;
     }
@@ -314,12 +318,16 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    if (!user.phone) {
+      throw new BadRequestException('User phone number is not set');
+    }
+
     // create razorpay account if not already created
     if (!razorpayAccountId) {
       const accountData = {
         type: 'route',
         email: user.email,
-        phone: '9090909090',
+        phone: user.phone,
         legal_business_name: user.bankDetails.accountHolderName,
         business_type: 'individual',
         contact_name: user.bankDetails.accountHolderName,

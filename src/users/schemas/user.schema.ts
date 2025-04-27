@@ -14,6 +14,9 @@ export class User {
   @Prop({ required: true, unique: true })
   email: string;
 
+  @Prop({ default: null })
+  phone: string;
+
   @Prop({ unique: true, sparse: true })
   tipper_id?: string;
 

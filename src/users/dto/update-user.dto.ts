@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsObject,
+  IsPhoneNumber,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserDto {
@@ -19,6 +25,16 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   tipper_id?: string;
+
+  // add phone number field
+  @ApiProperty({
+    description: 'Phone number of the user',
+    example: '+1234567890',
+    required: false,
+  })
+  @IsOptional()
+  @IsPhoneNumber(null)
+  phone?: string;
 
   @ApiProperty({
     description: 'Bank account number',
