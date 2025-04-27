@@ -20,6 +20,18 @@ export class UserResponseDto {
   name: string;
 
   @ApiProperty({
+    description: 'razorpay activation status of the user',
+    example: 'activated',
+  })
+  razorpay_activation_status: string;
+
+  @ApiProperty({
+    description: 'Update state of bank details of the user',
+    example: 'true',
+  })
+  bankDetailsUpdated?: boolean;
+
+  @ApiProperty({
     description: 'Email address of the user',
     example: 'john@example.com',
   })
@@ -36,30 +48,6 @@ export class UserResponseDto {
     example: true,
   })
   tippingEnabled: boolean;
-
-  @ApiProperty({
-    description: 'Bank details of the user',
-    example: {
-      accountNumber: '1234567890',
-      ifscCode: 'ABCD0001234',
-      accountHolderName: 'John Doe',
-      bankName: 'State Bank of India',
-      isVerified: true,
-      verificationStatus: 'VERIFIED',
-      lastVerificationAttempt: '2024-03-20T10:00:00.000Z',
-      verificationError: null,
-    },
-  })
-  bankDetails: {
-    accountNumber: string;
-    ifscCode: string;
-    accountHolderName: string;
-    bankName: string;
-    isVerified: boolean;
-    verificationStatus: 'PENDING' | 'VERIFIED' | 'FAILED';
-    lastVerificationAttempt: Date | null;
-    verificationError: string | null;
-  };
 
   @ApiProperty({
     type: 'object',

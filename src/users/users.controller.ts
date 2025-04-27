@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateTipDto } from './dto/create-tip.dto';
 import { DashboardResponse } from './dto/dashboard.dto';
@@ -50,23 +49,10 @@ export class UsersController {
     status: 409,
     description: 'Email already exists',
   })
-  async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  async create(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<Partial<UserResponseDto>> {
     return this.usersService.create(createUserDto);
-  }
-
-  @Post('login')
-  @ApiOperation({ summary: 'Login user' })
-  @ApiResponse({
-    status: 200,
-    description: 'User successfully logged in',
-    type: UserResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Invalid credentials',
-  })
-  async login(@Body() loginUserDto: LoginUserDto): Promise<UserResponseDto> {
-    return this.usersService.validateUser(loginUserDto);
   }
 
   @UseGuards(AuthGuard)
@@ -98,7 +84,7 @@ export class UsersController {
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<Partial<UserResponseDto>> {
     return this.usersService.update(id, updateUserDto);
   }
 
@@ -124,6 +110,7 @@ export class UsersController {
     return this.usersService.verifyBankDetails(tipperId);
   }
 
+  @UseGuards(AuthGuard)
   @Post(':id/tip')
   @ApiOperation({ summary: 'Create a new tip for a user' })
   @ApiParam({
@@ -147,6 +134,7 @@ export class UsersController {
     return this.usersService.createTip(id, createTipDto);
   }
 
+  @UseGuards(AuthGuard)
   @Post(':id/tip/:tipperPaymentId/verify')
   @ApiOperation({ summary: 'Verify already created tip for a user' })
   @ApiParam({
@@ -169,35 +157,6 @@ export class UsersController {
 
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @Get()
-  @ApiOperation({ summary: 'Get all users with pagination' })
-  @ApiQuery({
-    name: 'skip',
-    required: false,
-    description: 'Number of records to skip',
-    type: 'number',
-    example: 0,
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description: 'Number of records to return',
-    type: 'number',
-    example: 10,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of users retrieved successfully',
-    type: [UserResponseDto],
-  })
-  async findAll(
-    @Query() paginationDto: PaginationDto,
-  ): Promise<UserResponseDto[]> {
-    return this.usersService.findAll(paginationDto);
-  }
-
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @Get(':id')
   @ApiOperation({ summary: 'Get user by UUID or tipper_id' })
   @ApiParam({
@@ -214,7 +173,7 @@ export class UsersController {
     status: 404,
     description: 'User not found',
   })
-  async findOne(@Param('id') id: string): Promise<UserResponseDto> {
+  async findOne(@Param('id') id: string): Promise<Partial<UserResponseDto>> {
     const user = await this.usersService.findOne(id);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -222,6 +181,7 @@ export class UsersController {
     return user;
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id/transactions')
   @ApiOperation({ summary: 'Get user transactions with filtering' })
   @ApiParam({
@@ -326,6 +286,7 @@ export class UsersController {
     return this.usersService.getDashboard(tipperId, params);
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':tipper_id/transactions/:transactionId')
   @ApiOperation({ summary: 'Update a transaction' })
   @ApiParam({ name: 'tipper_id', description: 'User ID' })

@@ -60,31 +60,6 @@ interface TransactionDocument {
   updatedAt: Date;
 }
 
-export interface UserResponse {
-  _id: any; // MongoDB _id can be ObjectId or string
-  name: string;
-  email: string;
-  tipper_id: string;
-  tippingEnabled: boolean;
-  bankDetails: {
-    isVerified: boolean;
-    verificationStatus: string;
-    lastVerificationAttempt: Date | null;
-  };
-}
-
-export interface TipResponse {
-  _id: any;
-  amount: number;
-  currency: string;
-  senderName: string;
-  status: string;
-  paymentId?: string;
-  errorMessage?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 interface Transaction {
   amount: number;
   currency: string;
@@ -122,7 +97,7 @@ export class UsersService {
     private currencyConversionService: CurrencyConversionService,
   ) {}
 
-  private sanitizeUserResponse(user: UserDocument): UserResponseDto {
+  private sanitizeUserResponse(user: UserDocument): Partial<UserResponseDto> {
     return {
       _id: (user._id as Types.ObjectId).toString(),
       uuid: user.uuid,
@@ -130,8 +105,8 @@ export class UsersService {
       email: user.email,
       tipper_id: user.tipper_id,
       tippingEnabled: user.tippingEnabled,
-      bankDetails: user.bankDetails,
       _metadata: user._metadata,
+      razorpay_activation_status: user.razorpay_activation_status,
     };
   }
 
@@ -151,7 +126,9 @@ export class UsersService {
     }
   }
 
-  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  async create(
+    createUserDto: CreateUserDto,
+  ): Promise<Partial<UserResponseDto>> {
     try {
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
       const uuid = 'oc-' + uuidv4();
@@ -177,7 +154,7 @@ export class UsersService {
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  ): Promise<Partial<UserResponseDto>> {
     const user = await this.userModel.findOne({
       $or: [{ uuid: id }, { tipper_id: id }],
     });
@@ -297,37 +274,28 @@ export class UsersService {
     return this.sanitizeUserResponse(updatedUser);
   }
 
-  async validateUser(loginUserDto: LoginUserDto): Promise<UserResponseDto> {
-    const user = await this.userModel.findOne({ email: loginUserDto.email });
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const isPasswordValid = await bcrypt.compare(
-      loginUserDto.password,
-      user.userHash,
-    );
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    return this.sanitizeUserResponse(user);
-  }
-
-  async findAll(paginationDto: PaginationDto): Promise<UserResponseDto[]> {
-    const users = await this.userModel
-      .find()
-      .skip(paginationDto.skip)
-      .limit(paginationDto.limit)
-      .exec();
-    return users.map((user) => this.sanitizeUserResponse(user));
-  }
-
-  async findOne(id: string): Promise<UserResponseDto | null> {
+  async findOne(id: string): Promise<Partial<UserResponseDto> | null> {
     const user = await this.userModel
       .findOne({ $or: [{ uuid: id }, { tipper_id: id }] })
       .exec();
-    return user ? this.sanitizeUserResponse(user) : null;
+
+    let bankDetailsUpdated = false;
+    if (user) {
+      // Check if bank details are updated
+      if (
+        user.bankDetails &&
+        user.bankDetails.accountNumber &&
+        user.bankDetails.ifscCode &&
+        user.bankDetails.accountHolderName &&
+        user.bankDetails.bankName
+      ) {
+        bankDetailsUpdated = true;
+      }
+    }
+
+    return user
+      ? { ...this.sanitizeUserResponse(user), bankDetailsUpdated }
+      : null;
   }
 
   async verifyBankDetails(tipper_id: string): Promise<any> {
@@ -353,11 +321,11 @@ export class UsersService {
           subcategory: 'video_on_demand',
           addresses: {
             registered: {
-              street1: 'Ayush ka ghar',
-              street2: 'Deepak ki gali',
-              city: 'Namma Bengaluru',
-              state: 'KARNATAKA',
-              postal_code: '560034',
+              street1: 'NA',
+              street2: 'NA',
+              city: 'Mumbai',
+              state: 'Maharashtra',
+              postal_code: '401301',
               country: 'IN',
             },
           },
@@ -494,7 +462,7 @@ export class UsersService {
     }
 
     if (!user.bankDetails.isVerified) {
-      throw new NotFoundException('User bank details are not verified');
+      throw new NotFoundException('User is not verified ~ PG');
     }
 
     const collectionName = `${tipper_id}.transactions`;
@@ -834,9 +802,9 @@ export class UsersService {
     if (updateTransactionDto.isBanned !== undefined) {
       updateData.isBanned = updateTransactionDto.isBanned;
     }
-    if (updateTransactionDto.status) {
-      updateData.status = updateTransactionDto.status;
-    }
+    // if (updateTransactionDto.status) {
+    //   updateData.status = updateTransactionDto.status;
+    // }
     if (updateTransactionDto.errorMessage !== undefined) {
       updateData.errorMessage = updateTransactionDto.errorMessage;
     }
