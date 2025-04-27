@@ -1,7 +1,6 @@
 import {
   Injectable,
   ConflictException,
-  UnauthorizedException,
   NotFoundException,
   BadRequestException,
   Inject,
@@ -10,7 +9,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -124,6 +122,15 @@ export class UsersService {
         .collection(collectionName)
         .createIndexes([{ key: { createdAt: -1 } }, { key: { status: 1 } }]);
     }
+  }
+
+  async checkIdAvailability(username: string): Promise<boolean> {
+    const existingUser = await this.userModel
+      .findOne({
+        tipper_id: { $regex: new RegExp(`^${username}$`, 'i') }, // Case-insensitive exact match
+      })
+      .exec();
+    return !existingUser;
   }
 
   async create(

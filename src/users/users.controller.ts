@@ -9,6 +9,9 @@ import {
   Query,
   UseGuards,
   Patch,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -37,6 +40,34 @@ import { VerifyTipDto } from './dto/verify-tip.dto';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('check-tipperId/:tipper_id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check if a username is available' })
+  @ApiParam({
+    name: 'tipper_id',
+    description: 'The tipper_id to check',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'tipper_id availability status',
+    schema: { example: { available: true } },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid tipper_id format (if you add validation)',
+  })
+  async checkUsername(
+    @Param('tipper_id') tipper_id: string,
+  ): Promise<{ available: boolean }> {
+    if (!tipper_id || tipper_id.trim().length === 0) {
+      throw new BadRequestException('Username cannot be empty');
+    }
+
+    const isAvailable = await this.usersService.checkIdAvailability(tipper_id);
+    return { available: isAvailable };
+  }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
