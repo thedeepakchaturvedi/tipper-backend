@@ -141,7 +141,7 @@ export class UsersController {
     return this.usersService.verifyBankDetails(tipperId);
   }
 
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   @Post(':id/tip')
   @ApiOperation({ summary: 'Create a new tip for a user' })
   @ApiParam({
@@ -165,7 +165,7 @@ export class UsersController {
     return this.usersService.createTip(id, createTipDto);
   }
 
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   @Post(':id/tip/:tipperPaymentId/verify')
   @ApiOperation({ summary: 'Verify already created tip for a user' })
   @ApiParam({
