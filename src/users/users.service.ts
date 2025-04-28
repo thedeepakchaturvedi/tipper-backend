@@ -82,6 +82,12 @@ interface TransactionQuery {
   }>;
 }
 
+interface RazorpayTransferResponse {
+  id?: string;
+  items?: Array<{ id?: string; [key: string]: any }>;
+  [key: string]: any;
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -776,7 +782,7 @@ export class UsersService {
       }
 
       // 5. Create Transfer
-      const transferResponse: { [key: string]: any } =
+      const transferResponse: RazorpayTransferResponse =
         await this.razorpayPaymentService.createTransfer(
           razorpayPaymentId,
           user.razorpay_account_id,
