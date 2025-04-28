@@ -33,6 +33,7 @@ import {
   GST_PERCENTAGE,
   RAZORPAY_FEE_PERCENTAGE,
 } from '../utils/app.constants';
+import { validateTipperId } from '../utils/tipper-id.utils';
 
 interface MongoError extends Error {
   code: number;
@@ -181,6 +182,9 @@ export class UsersService {
       if (user.isTipperIdSet && user.tipper_id !== updateUserDto.tipper_id) {
         throw new BadRequestException('tipper_id can only be set once');
       }
+
+      // Validate that the tipper ID is not in the restricted list
+      validateTipperId(updateUserDto.tipper_id);
 
       // Check if tipper_id is already taken by another user
       const existingUser = await this.userModel.findOne({
