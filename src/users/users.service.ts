@@ -190,11 +190,11 @@ export class UsersService {
     }
 
     // Update basic user information
-    if (updateUserDto.name) {
+    if (updateUserDto.name !== undefined) {
       user.name = updateUserDto.name;
     }
 
-    if (updateUserDto.phone) {
+    if (updateUserDto.phone !== undefined) {
       user.phone = updateUserDto.phone;
     }
 
@@ -211,20 +211,30 @@ export class UsersService {
 
     // Update bank details if any bank-related fields are provided
     const hasBankUpdates =
-      updateUserDto.accountNumber ||
-      updateUserDto.ifscCode ||
-      updateUserDto.accountHolderName ||
-      updateUserDto.bankName;
+      updateUserDto.accountNumber !== undefined ||
+      updateUserDto.ifscCode !== undefined ||
+      updateUserDto.accountHolderName !== undefined ||
+      updateUserDto.bankName !== undefined;
 
     if (hasBankUpdates) {
       user.bankDetails = {
         ...user.bankDetails,
         accountNumber:
-          updateUserDto.accountNumber || user.bankDetails.accountNumber,
-        ifscCode: updateUserDto.ifscCode || user.bankDetails.ifscCode,
+          updateUserDto.accountNumber !== undefined
+            ? updateUserDto.accountNumber
+            : user.bankDetails.accountNumber,
+        ifscCode:
+          updateUserDto.ifscCode !== undefined
+            ? updateUserDto.ifscCode
+            : user.bankDetails.ifscCode,
         accountHolderName:
-          updateUserDto.accountHolderName || user.bankDetails.accountHolderName,
-        bankName: updateUserDto.bankName || user.bankDetails.bankName,
+          updateUserDto.accountHolderName !== undefined
+            ? updateUserDto.accountHolderName
+            : user.bankDetails.accountHolderName,
+        bankName:
+          updateUserDto.bankName !== undefined
+            ? updateUserDto.bankName
+            : user.bankDetails.bankName,
         isVerified: false, // Reset verification when bank details change
         verificationStatus: 'PENDING',
         lastVerificationAttempt: null,
@@ -234,58 +244,71 @@ export class UsersService {
 
     // Update metadata if provided
     if (updateUserDto._metadata) {
+      const picUrl =
+        updateUserDto._metadata.picture?.url !== undefined
+          ? updateUserDto._metadata.picture.url
+          : user._metadata?.picture?.url || '';
+
+      const picFileName =
+        updateUserDto._metadata.picture?.fileName !== undefined
+          ? updateUserDto._metadata.picture.fileName
+          : user._metadata?.picture?.fileName || '';
+
       user._metadata = {
         ...user._metadata,
         picture: {
-          url:
-            updateUserDto._metadata.picture?.url ||
-            user._metadata.picture?.url ||
-            '',
-          fileName:
-            updateUserDto._metadata.picture?.fileName ||
-            user._metadata.picture?.fileName ||
-            '',
+          url: picUrl,
+          fileName: picFileName,
         },
         tipperPage: {
           title:
-            updateUserDto._metadata.tipperPage?.title ||
-            user._metadata.tipperPage.title,
+            updateUserDto._metadata.tipperPage?.title !== undefined
+              ? updateUserDto._metadata.tipperPage.title
+              : user._metadata?.tipperPage?.title || '',
           description:
-            updateUserDto._metadata.tipperPage?.description ||
-            user._metadata.tipperPage.description,
+            updateUserDto._metadata.tipperPage?.description !== undefined
+              ? updateUserDto._metadata.tipperPage.description
+              : user._metadata?.tipperPage?.description || '',
           profileImage: {
             url:
-              updateUserDto._metadata.tipperPage?.profileImage?.url ||
-              user._metadata.tipperPage.profileImage?.url ||
-              '',
+              updateUserDto._metadata.tipperPage?.profileImage?.url !==
+              undefined
+                ? updateUserDto._metadata.tipperPage.profileImage.url
+                : user._metadata?.tipperPage?.profileImage?.url || '',
             fileName:
-              updateUserDto._metadata.tipperPage?.profileImage?.fileName ||
-              user._metadata.tipperPage.profileImage?.fileName ||
-              '',
+              updateUserDto._metadata.tipperPage?.profileImage?.fileName !==
+              undefined
+                ? updateUserDto._metadata.tipperPage.profileImage.fileName
+                : user._metadata?.tipperPage?.profileImage?.fileName || '',
           },
           coverImage: {
             url:
-              updateUserDto._metadata.tipperPage?.coverImage?.url ||
-              user._metadata.tipperPage.coverImage?.url ||
-              '',
+              updateUserDto._metadata.tipperPage?.coverImage?.url !== undefined
+                ? updateUserDto._metadata.tipperPage.coverImage.url
+                : user._metadata?.tipperPage?.coverImage?.url || '',
             fileName:
-              updateUserDto._metadata.tipperPage?.coverImage?.fileName ||
-              user._metadata.tipperPage.coverImage?.fileName ||
-              '',
+              updateUserDto._metadata.tipperPage?.coverImage?.fileName !==
+              undefined
+                ? updateUserDto._metadata.tipperPage.coverImage.fileName
+                : user._metadata?.tipperPage?.coverImage?.fileName || '',
           },
           backgroundImage: {
             url:
-              updateUserDto._metadata.tipperPage?.backgroundImage?.url ||
-              user._metadata.tipperPage.backgroundImage?.url ||
-              '',
+              updateUserDto._metadata.tipperPage?.backgroundImage?.url !==
+              undefined
+                ? updateUserDto._metadata.tipperPage.backgroundImage.url
+                : user._metadata?.tipperPage?.backgroundImage?.url || '',
             fileName:
-              updateUserDto._metadata.tipperPage?.backgroundImage?.fileName ||
-              user._metadata.tipperPage.backgroundImage?.fileName ||
-              '',
+              updateUserDto._metadata.tipperPage?.backgroundImage?.fileName !==
+              undefined
+                ? updateUserDto._metadata.tipperPage.backgroundImage.fileName
+                : user._metadata?.tipperPage?.backgroundImage?.fileName || '',
           },
         },
         streamLink:
-          updateUserDto._metadata.streamLink || user._metadata.streamLink || '',
+          updateUserDto._metadata.streamLink !== undefined
+            ? updateUserDto._metadata.streamLink
+            : user._metadata?.streamLink || '',
       };
     }
 
