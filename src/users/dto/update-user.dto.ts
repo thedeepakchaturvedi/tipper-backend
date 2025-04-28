@@ -37,6 +37,15 @@ export class UpdateUserDto {
   phone?: string;
 
   @ApiProperty({
+    description: 'email verification status of the user',
+    example: 'true',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  emailVerified?: boolean;
+
+  @ApiProperty({
     description: 'Bank account number',
     example: '1234567890',
     required: false,

@@ -38,6 +38,12 @@ export class UserResponseDto {
   email: string;
 
   @ApiProperty({
+    description: 'Email verification status of the user',
+    example: true,
+  })
+  emailVerified: boolean;
+
+  @ApiProperty({
     description: 'Unique tipper ID',
     example: 'john123',
   })

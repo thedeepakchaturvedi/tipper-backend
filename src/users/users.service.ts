@@ -101,6 +101,7 @@ export class UsersService {
       uuid: user.uuid,
       name: user.name,
       email: user.email,
+      emailVerified: user.emailVerified,
       tipper_id: user.tipper_id,
       tippingEnabled: user.tippingEnabled,
       _metadata: user._metadata,
@@ -195,6 +196,13 @@ export class UsersService {
 
     if (updateUserDto.phone) {
       user.phone = updateUserDto.phone;
+    }
+
+    if (
+      updateUserDto.emailVerified !== undefined &&
+      typeof updateUserDto.emailVerified === 'boolean'
+    ) {
+      user.emailVerified = updateUserDto.emailVerified;
     }
 
     if (typeof updateUserDto.tippingEnabled === 'boolean') {
@@ -320,6 +328,10 @@ export class UsersService {
 
     if (!user.phone) {
       throw new BadRequestException('User phone number is not set');
+    }
+
+    if (!user.emailVerified || !user.email) {
+      throw new BadRequestException('User email is not verified');
     }
 
     // create razorpay account if not already created
