@@ -52,9 +52,9 @@ export class AuthGuard implements CanActivate {
       }
 
       const secret = this.configService.getOrThrow<string>('JWT_SECRET');
-      const payload = (await this.jwtService.verifyAsync(token, {
+      const payload = await this.jwtService.verifyAsync(token, {
         secret,
-      })) as JwtPayload;
+      });
 
       if (!payload?.sub || !payload?.email) {
         throw new UnauthorizedException('Invalid token payload');
