@@ -5,6 +5,7 @@ import {
   BadRequestException,
   Inject,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
@@ -169,6 +170,7 @@ export class UsersService {
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
+    req: Request,
   ): Promise<Partial<UserResponseDto>> {
     const user = await this.userModel.findOne({
       $or: [{ uuid: id }, { tipper_id: id }],
@@ -208,11 +210,17 @@ export class UsersService {
       user.phone = updateUserDto.phone;
     }
 
-    if (
-      updateUserDto.emailVerified !== undefined &&
-      typeof updateUserDto.emailVerified === 'boolean'
-    ) {
-      user.emailVerified = updateUserDto.emailVerified;
+    // Update email verification status
+    const emailVerified = updateUserDto.emailVerified;
+    const emailAuthKey = this.configService.get<string>('EMAIL_AUTH_KEY');
+    const commonKey = req.headers['x-common-key'];
+
+    if (typeof emailVerified === 'boolean') {
+      if (!commonKey || !emailAuthKey || emailAuthKey !== commonKey) {
+        throw new BadRequestException('Invalid email auth key');
+      }
+
+      user.emailVerified = emailVerified;
     }
 
     if (typeof updateUserDto.tippingEnabled === 'boolean') {

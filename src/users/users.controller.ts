@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -35,6 +36,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { TipResponseDto } from './dto/tip-response.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { VerifyTipDto } from './dto/verify-tip.dto';
+import { Request } from 'express';
 
 @ApiTags('Users')
 @Controller('users')
@@ -113,10 +115,11 @@ export class UsersController {
     description: 'tipper_id already exists',
   })
   async update(
+    @Req() req: Request,
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<Partial<UserResponseDto>> {
-    return this.usersService.update(id, updateUserDto);
+    return this.usersService.update(id, updateUserDto, req);
   }
 
   @UseGuards(AuthGuard)
