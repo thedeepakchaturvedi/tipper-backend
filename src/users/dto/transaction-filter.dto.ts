@@ -6,15 +6,23 @@ import {
   Min,
   IsDateString,
   IsBoolean,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { SupportedCurrencies } from './supported-currencies.dto';
 
 export enum TransactionStatus {
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
+  PENDING = 'order created',
+  COMPLETED = 'completed',
   FAILED = 'FAILED',
+}
+
+export enum TransactionSortBy {
+  CREATED_AT = 'createdAt',
+  AMOUNT = 'amount',
+  STATUS = 'status',
+  CURRENCY = 'currency',
 }
 
 export class TransactionFilterDto {
@@ -37,6 +45,28 @@ export class TransactionFilterDto {
   @IsOptional()
   @IsString()
   currency?: string;
+
+  @ApiProperty({
+    description: 'Sort by property',
+    required: false,
+    example: TransactionSortBy.CREATED_AT,
+    default: TransactionSortBy.CREATED_AT,
+    enum: Object.values(TransactionSortBy),
+  })
+  @IsOptional()
+  @IsEnum(TransactionSortBy)
+  sortBy?: TransactionSortBy = TransactionSortBy.CREATED_AT;
+
+  @ApiProperty({
+    description: 'Sort order',
+    required: false,
+    example: 'desc',
+    default: 'asc',
+  })
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc' = 'desc';
+
 
   @ApiProperty({
     description: 'Minimum transaction amount',

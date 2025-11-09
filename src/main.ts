@@ -46,7 +46,10 @@ async function bootstrap() {
   }
 
   // Enable CORS
-  app.enableCors();
+  app.enableCors({
+    origin: [process.env.PUBLIC_FRONTEND_URL, process.env.APP_PRONTEND_URL],
+    credentials: true,
+  });
 
   const port = process.env.PORT || 3000;
   await app.listen(port);

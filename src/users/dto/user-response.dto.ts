@@ -96,7 +96,7 @@ export class UserResponseDto {
       streamLink: { type: 'string' },
     },
   })
-  _metadata: {
+  metadata: {
     picture: {
       url: string;
       fileName: string;

@@ -119,7 +119,7 @@ export class UpdateUserDto {
   })
   @IsOptional()
   @IsObject()
-  _metadata?: {
+  metadata?: {
     picture?: {
       url?: string;
       fileName?: string;

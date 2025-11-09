@@ -75,7 +75,7 @@ interface TransactionQuery {
     $lte?: number;
   };
   createdAt?: {
-    $gte?: Date;
+    $gt?: Date;
     $lte?: Date;
   };
   isBanned?: boolean;
@@ -112,7 +112,7 @@ export class UsersService {
       emailVerified: user.emailVerified,
       tipper_id: user.tipper_id,
       tippingEnabled: user.tippingEnabled,
-      _metadata: user._metadata,
+      metadata: user.metadata,
       razorpay_activation_status: user.razorpay_activation_status,
     };
   }
@@ -261,72 +261,72 @@ export class UsersService {
     }
 
     // Update metadata if provided
-    if (updateUserDto._metadata) {
+    if (updateUserDto.metadata) {
       const picUrl =
-        updateUserDto._metadata.picture?.url !== undefined
-          ? updateUserDto._metadata.picture.url
-          : user._metadata?.picture?.url || '';
+        updateUserDto.metadata.picture?.url !== undefined
+          ? updateUserDto.metadata.picture.url
+          : user.metadata?.picture?.url || '';
 
       const picFileName =
-        updateUserDto._metadata.picture?.fileName !== undefined
-          ? updateUserDto._metadata.picture.fileName
-          : user._metadata?.picture?.fileName || '';
+        updateUserDto.metadata.picture?.fileName !== undefined
+          ? updateUserDto.metadata.picture.fileName
+          : user.metadata?.picture?.fileName || '';
 
-      user._metadata = {
-        ...user._metadata,
+      user.metadata = {
+        ...user.metadata,
         picture: {
           url: picUrl,
           fileName: picFileName,
         },
         tipperPage: {
           title:
-            updateUserDto._metadata.tipperPage?.title !== undefined
-              ? updateUserDto._metadata.tipperPage.title
-              : user._metadata?.tipperPage?.title || '',
+            updateUserDto.metadata.tipperPage?.title !== undefined
+              ? updateUserDto.metadata.tipperPage.title
+              : user.metadata?.tipperPage?.title || '',
           description:
-            updateUserDto._metadata.tipperPage?.description !== undefined
-              ? updateUserDto._metadata.tipperPage.description
-              : user._metadata?.tipperPage?.description || '',
+            updateUserDto.metadata.tipperPage?.description !== undefined
+              ? updateUserDto.metadata.tipperPage.description
+              : user.metadata?.tipperPage?.description || '',
           profileImage: {
             url:
-              updateUserDto._metadata.tipperPage?.profileImage?.url !==
+              updateUserDto.metadata.tipperPage?.profileImage?.url !==
               undefined
-                ? updateUserDto._metadata.tipperPage.profileImage.url
-                : user._metadata?.tipperPage?.profileImage?.url || '',
+                ? updateUserDto.metadata.tipperPage.profileImage.url
+                : user.metadata?.tipperPage?.profileImage?.url || '',
             fileName:
-              updateUserDto._metadata.tipperPage?.profileImage?.fileName !==
+              updateUserDto.metadata.tipperPage?.profileImage?.fileName !==
               undefined
-                ? updateUserDto._metadata.tipperPage.profileImage.fileName
-                : user._metadata?.tipperPage?.profileImage?.fileName || '',
+                ? updateUserDto.metadata.tipperPage.profileImage.fileName
+                : user.metadata?.tipperPage?.profileImage?.fileName || '',
           },
           coverImage: {
             url:
-              updateUserDto._metadata.tipperPage?.coverImage?.url !== undefined
-                ? updateUserDto._metadata.tipperPage.coverImage.url
-                : user._metadata?.tipperPage?.coverImage?.url || '',
+              updateUserDto.metadata.tipperPage?.coverImage?.url !== undefined
+                ? updateUserDto.metadata.tipperPage.coverImage.url
+                : user.metadata?.tipperPage?.coverImage?.url || '',
             fileName:
-              updateUserDto._metadata.tipperPage?.coverImage?.fileName !==
+              updateUserDto.metadata.tipperPage?.coverImage?.fileName !==
               undefined
-                ? updateUserDto._metadata.tipperPage.coverImage.fileName
-                : user._metadata?.tipperPage?.coverImage?.fileName || '',
+                ? updateUserDto.metadata.tipperPage.coverImage.fileName
+                : user.metadata?.tipperPage?.coverImage?.fileName || '',
           },
           backgroundImage: {
             url:
-              updateUserDto._metadata.tipperPage?.backgroundImage?.url !==
+              updateUserDto.metadata.tipperPage?.backgroundImage?.url !==
               undefined
-                ? updateUserDto._metadata.tipperPage.backgroundImage.url
-                : user._metadata?.tipperPage?.backgroundImage?.url || '',
+                ? updateUserDto.metadata.tipperPage.backgroundImage.url
+                : user.metadata?.tipperPage?.backgroundImage?.url || '',
             fileName:
-              updateUserDto._metadata.tipperPage?.backgroundImage?.fileName !==
+              updateUserDto.metadata.tipperPage?.backgroundImage?.fileName !==
               undefined
-                ? updateUserDto._metadata.tipperPage.backgroundImage.fileName
-                : user._metadata?.tipperPage?.backgroundImage?.fileName || '',
+                ? updateUserDto.metadata.tipperPage.backgroundImage.fileName
+                : user.metadata?.tipperPage?.backgroundImage?.fileName || '',
           },
         },
         streamLink:
-          updateUserDto._metadata.streamLink !== undefined
-            ? updateUserDto._metadata.streamLink
-            : user._metadata?.streamLink || '',
+          updateUserDto.metadata.streamLink !== undefined
+            ? updateUserDto.metadata.streamLink
+            : user.metadata?.streamLink || '',
       };
     }
 
@@ -346,8 +346,7 @@ export class UsersService {
         user.bankDetails &&
         user.bankDetails.accountNumber &&
         user.bankDetails.ifscCode &&
-        user.bankDetails.accountHolderName &&
-        user.bankDetails.bankName
+        user.bankDetails.accountHolderName
       ) {
         bankDetailsUpdated = true;
       }
@@ -574,7 +573,7 @@ export class UsersService {
 
     if (filterDto.afterDate) {
       query.createdAt = {
-        $gte: new Date(filterDto.afterDate),
+        $gt: new Date(filterDto.afterDate),
         $lte: new Date(), // Current date/time
       };
     }
@@ -582,7 +581,7 @@ export class UsersService {
     return this.connection.db
       .collection(collectionName)
       .find(query)
-      .sort({ createdAt: -1 })
+      .sort({ [filterDto.sortBy]: filterDto.sortOrder === 'asc' ? 1 : -1 })
       .skip(paginationDto.skip)
       .limit(paginationDto.limit)
       .toArray();

@@ -91,7 +91,7 @@ export class User {
       streamLink: '',
     },
   })
-  _metadata: {
+  metadata: {
     picture: {
       url: string;
       fileName: string;

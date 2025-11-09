@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { decode } from 'next-auth/jwt';
 
 interface JwtPayload {
   sub: string;
@@ -52,15 +53,15 @@ export class AuthGuard implements CanActivate {
       }
 
       const secret = this.configService.getOrThrow<string>('JWT_SECRET');
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload = await decode({
+        token,
         secret,
-      });
-
+      }) as JwtPayload;
       if (!payload?.sub || !payload?.email) {
         throw new UnauthorizedException('Invalid token payload');
       }
 
-      request.user = payload;
+      request.user = payload as JwtPayload;
       return true;
     } catch (error) {
       if (error instanceof UnauthorizedException) {

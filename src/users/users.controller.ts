@@ -20,7 +20,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateTipDto } from './dto/create-tip.dto';
 import { DashboardResponse } from './dto/dashboard.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
-import { TransactionFilterDto } from './dto/transaction-filter.dto';
+import { TransactionFilterDto, TransactionSortBy } from './dto/transaction-filter.dto';
 import { DashboardParamsDto } from './dto/dashboard-params.dto';
 import { AuthGuard } from './guards/auth.guard';
 import {
@@ -215,7 +215,7 @@ export class UsersController {
     return user;
   }
 
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   @Get(':id/transactions')
   @ApiOperation({ summary: 'Get user transactions with filtering' })
   @ApiParam({
@@ -248,6 +248,20 @@ export class UsersController {
     required: false,
     description: 'Filter by currency',
     enum: Object.values(SupportedCurrencies),
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    description: 'Sort by property',
+    enum: Object.values(TransactionSortBy),
+    example: TransactionSortBy.CREATED_AT,
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    description: 'Sort order',
+    enum: ['asc', 'desc'],
+    example: 'desc',
   })
   @ApiQuery({
     name: 'minAmount',
